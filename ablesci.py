@@ -128,6 +128,7 @@ def protect_privacy(text):
 class Notifier:
     def __init__(self, title="科研通签到"):
         self.log_content = []
+        self.has_errors = False
         self.title = title
         self.notify_enabled = False
         
@@ -135,7 +136,7 @@ class Notifier:
             sys.path.append(os.path.dirname(os.path.abspath(__file__)))
             from sendNotify import send
             self.send = send
-            self.notify_enabled = True
+            self.notify_enabled = any(os.getenv(key) for key in ("SCKEY", "XZKEY", "PUSH_PLUS_TOKEN"))
         except ImportError:
             try:
                 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -149,6 +150,8 @@ class Notifier:
     
     def log(self, message, level="info"):
         """格式化日志输出并保存到内容 - 使用北京时间"""
+        if level == "error":
+            self.has_errors = True
         beijing_time = get_beijing_time()
         timestamp = beijing_time.strftime("%Y-%m-%d %H:%M:%S")
         
@@ -217,6 +220,9 @@ class AbleSciAuto:
                 csrf_token = soup.find('input', {'name': '_csrf'})
                 if csrf_token:
                     return csrf_token.get('value', '')
+                csrf_meta = soup.find('meta', {'name': 'csrf-token'})
+                if csrf_meta:
+                    return csrf_meta.get('content', '')
             else:
                 self.log(f"获取CSRF令牌失败，状态码: {response.status_code}", "error")
         except Exception as e:
@@ -451,7 +457,7 @@ def main():
         global_notifier.log(f"请设置环境变量 {ENV_ACCOUNTS}，格式为：邮箱1:密码1[换行]邮箱2:密码2", "warning")
         if global_notifier.notify_enabled:
             global_notifier.send_notification()
-        return
+        sys.exit(1)
     
     global_notifier.log(f"找到 {account_count} 个账号", "info")
     
@@ -468,8 +474,7 @@ def main():
     if global_notifier.notify_enabled:
         global_notifier.send_notification()
     
-    if os.getenv("GITHUB_ACTIONS") == "true":
-        print(f"::set-output name=log_content::{global_notifier.get_content()}")
+    sys.exit(1 if global_notifier.has_errors else 0)
 
 if __name__ == "__main__":
     main()
