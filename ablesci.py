@@ -82,7 +82,7 @@ def load_env_file():
 
     if ENV_ACCOUNTS in os.environ:
         val = os.environ[ENV_ACCOUNTS]
-        print(f"当前 {ENV_ACCOUNTS} 内容预览: {val[:100]}{'...' if len(val) > 100 else ''}")
+        print(f"已加载 {ENV_ACCOUNTS} 账号配置")
 
 load_env_file()
 
@@ -397,7 +397,7 @@ def get_accounts():
         return []
     
     # 调试输出
-    print(f"原始账号环境变量内容: {repr(accounts_env)}")
+    # 不输出账号或密码。
     
     accounts = []
     # 支持换行符、分号、逗号分隔
@@ -425,7 +425,7 @@ def get_accounts():
         elif "|" in account:
             email, password = account.split("|", 1)
         else:
-            print(f"警告：跳过格式错误的账号项: {account}")
+            print("警告：跳过格式错误的账号项")
             continue
             
         email = email.strip()
@@ -433,7 +433,7 @@ def get_accounts():
         if email and password:
             valid_accounts.append((email, password))
         else:
-            print(f"警告：账号或密码为空: {email}:{password}")
+            print("警告：账号或密码为空")
     
     return valid_accounts
 
